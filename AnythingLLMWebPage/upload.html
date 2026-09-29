@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>文档上传 · AnythingLLM</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; color: #222; }
+  h1 { font-size: 20px; margin-bottom: 24px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; background: #fafafa; }
+  input[type=file] { width: 100%; margin-bottom: 16px; }
+  button { background: #1677ff; color: white; border: 0; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  #result { margin-top: 16px; padding: 12px; border-radius: 6px; font-size: 13px; white-space: pre-wrap; word-break: break-all; display: none; }
+  #result.ok   { background: #e6f7e6; color: #2a7; border: 1px solid #b7d7b7; display: block; }
+  #result.err  { background: #fff0f0; color: #c33; border: 1px solid #f0b0b0; display: block; }
+</style>
+</head>
+<body>
+<h1>📄 上传文档到 AnythingLLM</h1>
+<div class="card">
+  <input type="file" id="file" required>
+  <button id="btn" disabled>上传并向量化</button>
+  <div id="result"></div>
+</div>
+
+<script>
+  const API = "http://localhost:3001/api/v1/document/upload";
+  const KEY = "JDHNTAP-MM44XG8-J2CWF2K-QESF6TP";
+  const WORKSPACE_SLUG = "9ce30ce6-d687-4ddf-8ad8-9defc771e297"; // 我的工作区
+
+  const fileInput = document.getElementById("file");
+  const btn = document.getElementById("btn");
+  const result = document.getElementById("result");
+
+  fileInput.addEventListener("change", () => btn.disabled = !fileInput.files.length);
+
+  btn.addEventListener("click", async () => {
+    const f = fileInput.files[0];
+    btn.disabled = true; btn.textContent = "上传中...";
+    result.className = ""; result.style.display = "none"; result.textContent = "";
+
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("addToWorkspaces", WORKSPACE_SLUG);
+
+    try {
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${KEY}` },
+        body: fd,
+      });
+      const data = await r.json().catch(() => ({ error: "响应不是 JSON" }));
+      if (r.ok && data.success) {
+        const doc = data.documents?.[0] || {};
+        result.className = "ok";
+        result.textContent = `✅ 上传成功\n文件名: ${f.name}\nDocument ID: ${doc.id || "—"}\nFilename: ${doc.filename || "—"}\nEmbedding: ${doc.embedding?.length ?? "—"} dims\n\n完整响应:\n${JSON.stringify(data, null, 2)}`;
+      } else {
+        result.className = "err";
+        result.textContent = `❌ 失败 (HTTP ${r.status})\n${JSON.stringify(data, null, 2)}`;
+      }
+    } catch (e) {
+      result.className = "err";
+      result.textContent = `❌ 网络错误\n${e.message}\n\n如果是 CORS 问题，需要让 AnythingLLM 允许跨域。`;
+    } finally {
+      btn.disabled = false; btn.textContent = "上传并向量化";
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pet-hospital-mcp"
+version = "0.1.0"
+description = "MCP Server exposing Pet Hospital REST API via Model Context Protocol 2026-07-28"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp==2.0.0",
+    "httpx>=0.27,<1.0",
+    "pydantic>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+pet-hospital-mcp = "pet_hospital_mcp.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
