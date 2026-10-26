@@ -1,0 +1,78 @@
+flowchart TB
+    User["👤 用户"]
+    Main["主循环<br>while True"]
+    StreamChat["stream_chat()<br>通信层"]
+    Ollama["🦙 Ollama<br>qwen3-vl:4b-instruct<br>/v1/chat/completions"]
+
+    subgraph 工具层["🧰 工具层"]
+        direction LR
+        subgraph 通用工具["通用工具 (2)"]
+            GetDate["getDate"]
+            LeapYear["isLeapYear"]
+        end
+        subgraph 文件工具["文件操作 (10)"]
+            direction TB
+            subgraph 查看["查看类"]
+                GetCwd["getCwd"]
+                ListDir["listDir"]
+                GetFileType["getFileType"]
+                ReadFile["readFile"]
+            end
+            subgraph 创建["创建类"]
+                CreateFile["createFile"]
+                CreateDir["createDir"]
+            end
+            subgraph 修改["修改类"]
+                WriteFile["writeFile"]
+                RenamePath["renamePath"]
+            end
+            subgraph 删除["删除类"]
+                DeleteFile["deleteFile"]
+                DeleteDir["deleteDir"]
+            end
+        end
+    end
+
+    subgraph 基础设施["🔧 基础设施"]
+        direction LR
+        Resolve["_resolve()<br>路径解析"]
+        IsText["_is_text_file()<br>文本探测"]
+        ToolMap["TOOL_MAP<br>注册表"]
+        StdLib["os · shutil ·<br>subprocess · json"]
+    end
+
+    %% 用户交互
+    User -->|input()| Main
+    Main -->|input()| User
+
+    %% 主循环流程
+    Main -->|messages.append(user)| StreamChat
+    StreamChat -->|POST stream| Ollama
+    Ollama -->|SSE 流式响应| StreamChat
+    StreamChat -->|返回 (text, tool_calls)| Main
+    Main -->|messages.append(assistant)| Main
+
+    %% 工具调用分支
+    Main -->|"检测到 tool_calls"| ExecuteTools["执行工具循环"]
+    ExecuteTools -->|TOOL_MAP[name]| ToolMap
+    ToolMap -->|映射到函数| 工具层
+
+    %% 工具 → 基础设施
+    工具层 --> Resolve
+    工具层 --> IsText
+    工具层 --> StdLib
+
+    %% 第二轮回复
+    ExecuteTools -->|"messages.append(tool 结果)"| StreamChat
+    StreamChat -->|final_text| Main
+
+    %% 样式
+    classDef external fill:#e8f4fd,stroke:#1e88e5,stroke-width:2px
+    classDef core fill:#fff3e0,stroke:#fb8c00,stroke-width:2px
+    classDef tool fill:#e8f5e9,stroke:#43a047,stroke-width:1.5px
+    classDef infra fill:#fce4ec,stroke:#d81b60,stroke-width:1.5px
+
+    class User,Ollama external
+    class Main,StreamChat,ExecuteTools core
+    class GetDate,LeapYear,GetCwd,ListDir,GetFileType,ReadFile,CreateFile,CreateDir,WriteFile,RenamePath,DeleteFile,DeleteDir tool
+    class Resolve,IsText,ToolMap,StdLib infra

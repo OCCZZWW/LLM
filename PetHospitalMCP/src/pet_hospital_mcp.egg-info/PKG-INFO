@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: pet-hospital-mcp
+Version: 0.1.0
+Summary: MCP Server exposing Pet Hospital REST API via Model Context Protocol 2026-07-28
+Requires-Python: >=3.11
+Requires-Dist: mcp==2.0.0
+Requires-Dist: httpx<1.0,>=0.27
+Requires-Dist: pydantic<3.0,>=2.0
+Provides-Extra: test
+Requires-Dist: pytest>=8.0; extra == "test"
+Requires-Dist: pytest-asyncio>=0.24; extra == "test"
